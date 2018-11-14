@@ -40,7 +40,7 @@ for idx = 1 : 2 : nargin-1
     end
 end
 
-MyocountVersion = 'Myocount beta version 1.1';
+MyocountVersion = 'Myocount beta version 1.2';
 disp(MyocountVersion);
 
 %if no input image specified prompt to select one.
@@ -57,6 +57,10 @@ disp(fileList);
 
 csvdata = [];
 for i=1:filecount
+    if any(strcmp(fileList(i).name, {'.', '..'}))
+        continue
+    end
+         
     File = fullfile(fileList(i).folder, fileList(i).name);
     disp(File);
     
@@ -74,7 +78,31 @@ for i=1:filecount
         inputs.MinNuclei, ...
         inputs.Output);
     
-    x = {fileList(i).name,a,b,c,d};
+    name = fileList(i).name;
+    if(name=="")
+        error("ERROR:Empty file name returned, this may be a bug");
+        exit(0);
+    end
+    if(a=="")
+        error("ERROR:Invalid coverage returned, this may be a bug");
+        exit(0);
+    end
+    if(b=="")
+        error("ERROR:Invalid count returned, this may be a bug");
+        exit(0);
+    end
+    if(c=="")
+        error("ERROR:Invalid fused count returned, this may be a bug");
+        exit(0);
+    end
+    if(d=="")
+        error("ERROR:Invalid final count returned, this may be a bug");
+        exit(0);
+    end
+    
+    
+
+    x = {name,a,b,c,d};
     csvdata = [csvdata; x ];
 end
 
