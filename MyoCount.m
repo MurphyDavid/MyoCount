@@ -13,12 +13,13 @@ inputs.MinCircleRad = 15;
 inputs.MaxCircleRad = 40;
 inputs.TubeThresh = 1.0;
 inputs.MinNuclei = 3;
+inputs.MaxNucSizeDivisor = 100;
 inputs.Output = "";
 inputs.FilePath = "";
 
 known_vars = fieldnames(inputs);
 
-numerics = ["SmallestMyotubePixelCount","SmallestNucleusPixelCount","MyotubeChannel","NucChannel","FillSize","NucFillSize","MinCircleRad","MaxCircleRad","TubeThresh","MinNuclei"];
+numerics = ["SmallestMyotubePixelCount","SmallestNucleusPixelCount","MyotubeChannel","NucChannel","FillSize","NucFillSize","MinCircleRad","MaxCircleRad","TubeThresh","MinNuclei","MaxNucSizeDivisor"];
 
 if mod(nargin,2) ~= 0
     error('Expecting an even number of arguments');
@@ -40,9 +41,9 @@ for idx = 1 : 2 : nargin-1
     end
 end
 
-MyocountVersion = 'Myocount beta version 1.2';
+MyocountVersion = 'Myocount beta version 1.3';
 disp(MyocountVersion);
-
+PathName ="";
 %if no input image specified prompt to select one.
 if(strcmp(inputs.FilePath,"")~=0)
     [FileName,PathName] = uigetfile('*.tif','Please select tif');
@@ -55,12 +56,16 @@ fileList = dir(inputs.FilePath);
 filecount = size(fileList);
 disp(fileList);
 
-csvdata = [];
+if (strcmp(inputs.Output,"")~=0)
+    inputs.Output=PathName;
+end
+
+csvdata = ["Filename","% Occupied by myotubes","Nuclei Count","# Within Myotubes","# Within Myotubes containing minimum"];
 for i=1:filecount
     if any(strcmp(fileList(i).name, {'.', '..'}))
         continue
     end
-         
+    
     File = fullfile(fileList(i).folder, fileList(i).name);
     disp(File);
     
@@ -76,6 +81,7 @@ for i=1:filecount
         inputs.MaxCircleRad, ...
         inputs.TubeThresh, ...
         inputs.MinNuclei, ...
+        inputs.MaxNucSizeDivisor, ...
         inputs.Output);
     
     name = fileList(i).name;
@@ -101,7 +107,7 @@ for i=1:filecount
     end
     
     
-
+    
     x = {name,a,b,c,d};
     csvdata = [csvdata; x ];
 end
@@ -163,6 +169,7 @@ function [a,b,c,d] = processimagefile(imagefilelocation, ...
     MaxCircleRad, ...
     TubeThresh, ...
     MinNuclei, ...
+    MaxNucSizeDivisor, ...
     Outputfolder)
 
 [~,name,~] = fileparts(imagefilelocation);
@@ -173,7 +180,7 @@ img = imread(imagefilelocation); % Read image
 imshow(img);
 
 tubes = getmyotubes(img,MyotubeChannel,SmallestMyotubePixelCount,FillSize,TubeThresh);
-nuclei = getnuclei(img,NucChannel,SmallestNucleusPixelCount,NucFillSize);
+nuclei = getnuclei(img,NucChannel,SmallestNucleusPixelCount,NucFillSize,MaxNucSizeDivisor);
 
 [x,y]=size(img(:,:,MyotubeChannel));
 pixelcount=x*y;
@@ -245,7 +252,7 @@ bw3 = bw2-circlePixels;
 bw4 = splitconnected(bw3);
 
 %remove anything too small and get the centroids
-[indeximgarray,count] = bwlabel(bwareafilt(imbinarize(bw4,0.5),[SmallestNucleusPixelCount , pixelcount/100]));
+[indeximgarray,count] = bwlabel(bwareafilt(imbinarize(bw4,0.5),[SmallestNucleusPixelCount , pixelcount/MaxNucSizeDivisor]));
 points = mastercenters;
 for i=1:count
     objseparate(:,:,i) = indeximgarray == i;
@@ -360,7 +367,7 @@ end
 y = objseparate;
 end
 
-function y = getnuclei(image,NucChannel,SmallestNucleusPixelCount,NucFillSize)
+function y = getnuclei(image,NucChannel,SmallestNucleusPixelCount,NucFillSize,MaxNucSizeDivisor)
 %get the correct channel
 singlecolour = image(:,:,NucChannel);
 I_eq = adapthisteq(singlecolour);
@@ -386,7 +393,7 @@ singlecolour3 = logical(RGB(:,:,3));
 pixels=x*y;
 %throw out anything larger than 1% of the total image size to discard
 %washed out regions
-upper = pixels/100;
+upper = pixels/MaxNucSizeDivisor;
 %throw out anything less than this many pixels
 lower = SmallestNucleusPixelCount;
 
