@@ -17,6 +17,9 @@ inputs.MaxNucSizeDivisor = 100;
 inputs.Output = "";
 inputs.FilePath = "";
 
+
+MyocountVersion = 'Myocount version 1.3.1';
+
 known_vars = fieldnames(inputs);
 
 numerics = ["SmallestMyotubePixelCount","SmallestNucleusPixelCount","MyotubeChannel","NucChannel","FillSize","NucFillSize","MinCircleRad","MaxCircleRad","TubeThresh","MinNuclei","MaxNucSizeDivisor"];
@@ -41,7 +44,6 @@ for idx = 1 : 2 : nargin-1
     end
 end
 
-MyocountVersion = 'Myocount beta version 1.3';
 disp(MyocountVersion);
 PathName ="";
 %if no input image specified prompt to select one.
